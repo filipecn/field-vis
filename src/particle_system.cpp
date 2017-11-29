@@ -1,6 +1,6 @@
-#include "particle_system_texture.h"
+#include "particle_system.h"
 
-ParticleSystemTexture::ParticleSystemTexture(unsigned n) : particleCount(n) {
+ParticleSystem::ParticleSystem(unsigned n) : particleCount(n) {
   const char *source =
       "#version 430\n" \
           "layout (local_size_x = 128, local_size_y = 1, local_size_z = 1) in;"\
@@ -27,12 +27,11 @@ ParticleSystemTexture::ParticleSystemTexture(unsigned n) : particleCount(n) {
           "vec2 p = positions[index];\n"\
           "float l = lifes[index];\n"\
           "if(l <= 0) {\n"\
-          " p = vec2(rand(vec2(0.5,0.5)), rand(vec2(1,1)) );"\
+          " p = vec2(rand(vec2(0.5,0.5) * index), rand(vec2(1,1) * index));"\
           " l = 1.0;"\
           "}"\
           "lifes[index] = l - 0.001;"\
-          "positions[index] = vec2(texture(vx, vec2(0.5, 0.5)).r,2);\n"\
-          "positions[index] = p;\n"\
+          "positions[index] = p + 0.001 * vec2(texture(vx, p).r,texture(vy, p).r);\n"\
 "};\n";
   positions.resize(particleCount);
   lifeSpan.resize(particleCount, -1.f);
@@ -41,21 +40,32 @@ ParticleSystemTexture::ParticleSystemTexture(unsigned n) : particleCount(n) {
   pBuffer->bind();
   lBuffer->bind();
   shader.reset(new aergia::ComputeShader(source));
-  shader->setGroupSize(ponos::uivec3(particleCount, 1, 1));
+  shader->setGroupSize(ponos::uivec3(particleCount / 128, 1, 1));
   shader->setBuffer("PositionBuffer", pBuffer->id(), 0);
   shader->setBuffer("LifeSpanBuffer", lBuffer->id(), 1);
+  aergia::BufferDescriptor bufferDescriptor;
+  bufferDescriptor.type = GL_ARRAY_BUFFER;
+  bufferDescriptor.addAttribute("position", 2, 0, GL_FLOAT);
+  pb.reset(new aergia::VertexBuffer(pBuffer->id(), bufferDescriptor));
 }
 
-bool ParticleSystemTexture::solve() {
+bool ParticleSystem::solve() {
   shader->setUniform("vx", 0);
   shader->setUniform("vy", 1);
   bool r = shader->compute();
-  lBuffer->read(&lifeSpan[0]);
+  /*lBuffer->read(&lifeSpan[0]);
   for (int i = 0; i < 100; i++)
     std::cout << lifeSpan[i] << " ";
   std::cout << std::endl;
   pBuffer->read(&positions[0]);
   for (int i = 0; i < 100; i++)
-    std::cout << positions[i].x << " " << positions[i].y << std::endl;
+    std::cout << positions[i].x << " " << positions[i].y << std::endl;*/
   return r;
+}
+void ParticleSystem::draw() {
+  pb->bind();
+  aergia::glColor(aergia::COLOR_BLUE);
+  glEnableVertexAttribArray(0);
+  glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), 0);
+  glDrawArrays(GL_POINTS, 0, particleCount);
 }
