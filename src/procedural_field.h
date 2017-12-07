@@ -11,7 +11,9 @@ public:
                   const std::function<float(unsigned, unsigned)> &y);
   void bindX(GLenum target) const;
   void bindY(GLenum target) const;
+  ponos::vec2 resolution() const;
 private:
+  ponos::ivec2 res;
   std::shared_ptr<aergia::Texture> xText, yText;
 };
 
