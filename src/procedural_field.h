@@ -12,7 +12,10 @@ public:
   void bindX(GLenum target) const;
   void bindY(GLenum target) const;
   ponos::vec2 resolution() const;
+  float maxVelocity() const;
+  float minVelocity() const;
 private:
+  float maxV, minV;
   ponos::ivec2 res;
   std::shared_ptr<aergia::Texture> xText, yText;
 };
