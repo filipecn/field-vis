@@ -52,7 +52,7 @@ private:
       "uniform float maxV;"
       "out vec2 texCoord;"
       "void main() {"
-      "   texCoord = vec2(1.0 - length(vec2(texture(vx, position).r,texture(vy, position).r)), 0) / maxV;\n"
+      "   texCoord = vec2(length(vec2(texture(vx, position).r,texture(vy, position).r)), 0) / maxV;\n"
       "   gl_Position = proj * vec4(position, 0.0, 1.0);"
       "}";
 

@@ -3,6 +3,7 @@
 #include "procedural_field.h"
 #include <unistd.h>
 #include "utils.h"
+#include "lic.h"
 #ifdef WIN32
 #include <windows.h>
 #endif
@@ -34,16 +35,18 @@ int main() {
   app.addViewport2D(0, 0, W, H);
   app.getCamera<aergia::Camera2D>(0)->fit(ponos::make_unit_bbox2D(), 1.2f);
   ProceduralField *field = nullptr;
+  //delete[] data;
+  //data = nullptr;
   if (data == nullptr) {
-    field = new ProceduralField(512,
-                                512,
+    field = new ProceduralField(W,
+                                H,
                                 [&](unsigned x, unsigned y) -> float {
                                   if (y == H / 2 && x == W / 2)
                                     return 0.;
                                   float _x = static_cast<float>(x) - W / 2;
                                   float _y = static_cast<float>(y) - H / 2;
                                   ponos::vec2 normal(2 * _x, 2 * _y);
-                                  return -normal.y / normal.length();
+                                  return -normal.y / 100;// / normal.length();
                                 },
                                 [&](unsigned x, unsigned y) -> float {
                                   if (y == H / 2 && x == W / 2)
@@ -51,7 +54,7 @@ int main() {
                                   float _x = static_cast<float>(x) - W / 2;
                                   float _y = static_cast<float>(y) - H / 2;
                                   ponos::vec2 normal(2 * _x, 2 * _y);
-                                  return normal.x / normal.length();
+                                  return normal.x / 100;// / normal.length();
                                 });
   } else {
     int z = 0;
@@ -68,6 +71,9 @@ int main() {
                                 });
   }
   W = H = 1024;
+  LIC lic(field);
+  for(int i = 0; i < 10; i++)
+    lic.solve();
   ParticleSystem particleSystem(1280000, field, W, H);
   aergia::ShaderManager &sm = aergia::ShaderManager::instance();
   aergia::Shader screen(static_cast<GLuint>(sm.loadFromTexts(AERGIA_NO_VAO_VS, nullptr, screen_fs)));
@@ -81,6 +87,7 @@ int main() {
     //glEnable(GL_BLEND);
     //glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     particleSystem.bindTexure(GL_TEXTURE0);
+    lic.bindTexture(GL_TEXTURE0);
     screen.begin();
     screen.setUniform("tex", 0);
     glDrawArrays(GL_TRIANGLES, 0, 3);
